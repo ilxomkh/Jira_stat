@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -10,4 +14,12 @@ body {
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+.dotted-border {
+  border-right: 3px dotted rgb(197, 202, 211, 0.5); /* Увеличиваем точки */
+  border-spacing: 10px; /* Раздвигаем точки */
+}
+
+.recharts-pie-sector:focus {
+  outline: none !important;
 }
