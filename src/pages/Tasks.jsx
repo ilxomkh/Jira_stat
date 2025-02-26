@@ -78,8 +78,8 @@ const Tasks = () => {
     <div className="flex bg-gray-50 min-h-screen">
       <Sidebar />
       <div className="flex-1 p-6">
-        <div className="bg-white p-6 border rounded-xl border max-w-6xl mx-auto">
-          <div className="bg-white p-4 flex justify-between items-center">
+      <div className="bg-white p-6 border rounded-lg flex-1 overflow-auto">
+      <div className="bg-white p-4 flex justify-between items-center">
             <h2 className="text-xl font-semibold text-gray-800">
               {selectedStatus ? `Vazifalar: ${selectedStatus}` : "Vazifalar"}
             </h2>

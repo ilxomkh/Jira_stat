@@ -40,7 +40,7 @@ const Sidebar = () => {
   }, []);
 
   return (
-    <div className="w-72 bg-gray-50 p-5 flex flex-col min-h-screen mt-4">
+    <div className="w-80 bg-gray-50 p-5 flex flex-col min-h-screen mt-4">
       {/* Логотип */}
       <div className="flex justify-center mb-4">
         <img src={Logo} alt="Logo" className="w-1/2" />
@@ -65,10 +65,7 @@ const Sidebar = () => {
           </NavLink>
         ))}
       </nav>
-      <div className="border-t border-dashed border-gray-300 my-3"></div>
-        <div className="mt-6 flex ">
-          <CalendarNotes />
-        </div>
+
       {/* Eng dolzarb loyihalar */}
     </div>
   );

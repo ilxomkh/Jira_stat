@@ -55,7 +55,7 @@ const TasksByStatus = () => {
     <div className="flex bg-gray-50 min-h-screen">
       <Sidebar />
       <div className="flex-1 p-6">
-        <div className="bg-white p-6 border rounded-xl max-w-6xl mx-auto shadow-lg">
+        <div className="bg-white p-6 border rounded-xl max-w-6xl mx-auto ">
           {/* Заголовок */}
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-gray-800 flex items-center">

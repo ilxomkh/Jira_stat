@@ -124,9 +124,9 @@ const TaskStatistics = () => {
       </div>
 
       {loading ? (
-        <div className="flex justify-center items-center h-full text-gray-600">
+        <div className="flex justify-center items-center h-full text-gray-600 focus:outline-none">
           <svg
-            className="animate-slow-spin h-8 w-8 text-gray-500"
+            className="animate-slow-spin h-8 w-8 text-gray-500 focus:outline-none"
             id="Layer_1"
             data-name="Layer 1"
             xmlns="http://www.w3.org/2000/svg"
@@ -147,9 +147,9 @@ const TaskStatistics = () => {
                 width="100%"
                 height={360}
                 tabIndex={-1}
-                className="outline-none"
+                style={{ outline: "none" }}
               >
-                <PieChart tabIndex={-1}>
+                <PieChart tabIndex={-1} style={{ outline: "none" }}>
                   <Pie
                     data={tasks.filter((task) => task.name !== "Boshqalar")} // Исключаем "Boshqalar"
                     cx="50%"
@@ -160,6 +160,7 @@ const TaskStatistics = () => {
                     dataKey="value"
                     onClick={handlePieClick}
                     tabIndex={-1}
+                    style={{ outline: "none" }}
                   >
                     {tasks
                       .filter((task) => task.name !== "Boshqalar")
