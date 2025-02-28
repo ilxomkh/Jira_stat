@@ -7,74 +7,99 @@ import LogoutButton from "../components/LogoutButton";
 const Tasks = () => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Текущее состояние пагинации
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageGroup, setPageGroup] = useState(1); // Группа страниц (по 10)
   const itemsPerPage = 20;
   const [totalPages, setTotalPages] = useState(1);
-  const [pageGroup, setPageGroup] = useState(1); // Группа страниц (по 10)
 
   const [searchParams] = useSearchParams();
   const selectedStatus = searchParams.get("status"); // Получаем статус из URL
 
-  fetch(`${BASE_URL}/projects/tasks`)
-  .then((response) => response.json())
-  .then((data) => {
-    console.log("✅ Загруженные данные с сервера:", data); // Выводим все данные
+  // Загружаем задачи при монтировании компонента (или при смене статуса, если нужно)
+  useEffect(() => {
+    setLoading(true);
 
-    if (!Array.isArray(data)) {
-      console.error("❌ Ошибка: `tasks` не является массивом", data);
-      setTasks([]);
-      return;
-    }
+    fetch(`${BASE_URL}/projects/tasks`)
+      .then((response) => response.json())
+      .then((data) => {
+        console.log("✅ Загруженные данные с сервера:", data);
 
-    let formattedTasks = data.map((task) => ({
-      id: task.id || Math.random(),
-      name: task.task_name || "Nomsiz vazifa",
-      project: task.project || "Noma'lum loyiha",
-      dueDate: task.due_date || "Sana yo'q",
-      assignee: task.assignee || "Belgilanmagan",
-      status: task.status || "Noma'lum holat",
-      assignee_avatar: task.assignee_avatar || "https://cdn-icons-png.flaticon.com/512/149/149071.png",
-    }));
+        if (!Array.isArray(data)) {
+          console.error("❌ Ошибка: `tasks` не является массивом", data);
+          setTasks([]);
+          setTotalPages(1);
+          return;
+        }
 
-    formattedTasks.sort(
-      (a, b) => new Date(b.dueDate) - new Date(a.dueDate)
-    );
+        let formattedTasks = data.map((task) => ({
+          id: task.id || Math.random(),
+          name: task.task_name || "Nomsiz vazifa",
+          project: task.project || "Noma'lum loyiha",
+          dueDate: task.due_date || "Sana yo'q",
+          assignee: task.assignee || "Belgilanmagan",
+          status: task.status || "Noma'lum holat",
+          assignee_avatar:
+            task.assignee_avatar ||
+            "https://cdn-icons-png.flaticon.com/512/149/149071.png",
+        }));
 
-    if (selectedStatus) {
-      formattedTasks = formattedTasks.filter(
-        (task) => task.status === selectedStatus
-      );
-    }
+        // Сортируем задачи по дате (сначала более поздние)
+        formattedTasks.sort((a, b) => new Date(b.dueDate) - new Date(a.dueDate));
 
-    setTasks(formattedTasks);
-    setTotalPages(Math.ceil(formattedTasks.length / itemsPerPage));
-  })
-  .catch((error) => console.error("❌ Ошибка загрузки задач:", error))
-  .finally(() => setLoading(false));
+        // Фильтруем по статусу, если есть параметр в URL
+        if (selectedStatus) {
+          formattedTasks = formattedTasks.filter(
+            (task) => task.status === selectedStatus
+          );
+        }
 
+        setTasks(formattedTasks);
+        setTotalPages(Math.ceil(formattedTasks.length / itemsPerPage));
+      })
+      .catch((error) => console.error("❌ Ошибка загрузки задач:", error))
+      .finally(() => setLoading(false));
+  }, [selectedStatus]); 
+  // Если хотите загружать один раз — уберите selectedStatus из массива зависимостей.
 
-  // Фильтрация задач для текущей страницы
+  // Массив задач для текущей страницы
   const currentTasks = tasks.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
 
-  // Генерация страниц для пагинации
-  const pages = [];
+  // Рассчитываем диапазон отображаемых страниц (pageGroup)
   const totalGroups = Math.ceil(totalPages / 10);
   const startPage = (pageGroup - 1) * 10 + 1;
   const endPage = Math.min(startPage + 9, totalPages);
 
+  // Генерация списка страниц
+  const pages = [];
   for (let i = startPage; i <= endPage; i++) {
     pages.push(i);
   }
+
+  // Функция для перехода к следующей группе (»»)
+  const goToNextGroup = () => {
+    // Если мы уже в последней группе, выходим
+    if (pageGroup * 10 >= totalPages) return;
+
+    // Вычисляем номер следующей группы
+    const nextGroup = pageGroup + 1;
+    setPageGroup(nextGroup);
+
+    // Первая страница следующей группы
+    const nextGroupFirstPage = (nextGroup - 1) * 10 + 1;
+    setCurrentPage(nextGroupFirstPage);
+  };
 
   return (
     <div className="flex bg-gray-50 min-h-screen">
       <Sidebar />
       <div className="flex-1 p-6">
-      <div className="bg-white p-6 border rounded-lg flex-1 overflow-auto">
-      <div className="bg-white p-4 flex justify-between items-center">
+        <div className="bg-white p-6 border rounded-lg flex-1 overflow-auto">
+          <div className="bg-white p-4 flex justify-between items-center">
             <h2 className="text-xl font-semibold text-gray-800">
               {selectedStatus ? `Vazifalar: ${selectedStatus}` : "Vazifalar"}
             </h2>
@@ -124,9 +149,9 @@ const Tasks = () => {
                         </td>
                         <td className="p-4">{task.project}</td>
                         <td className="p-4">
-                          <div className="flex items-center">
+                          <div className="flex items-center justify-center">
                             <img
-                              src={task.assignee_avatar                              }
+                              src={task.assignee_avatar}
                               alt="avatar"
                               className="w-6 h-6 rounded-full"
                             />
@@ -167,7 +192,7 @@ const Tasks = () => {
               </span>
             </div>
             <div className="flex items-center space-x-2">
-              {/* Кнопка перехода на первую страницу */}
+              {/* Кнопка перехода на первую страницу (и первую группу) */}
               <button
                 className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
                 disabled={currentPage === 1}
@@ -179,7 +204,7 @@ const Tasks = () => {
                 ««
               </button>
 
-              {/* Кнопка назад */}
+              {/* Кнопка назад на 1 страницу */}
               <button
                 className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
                 disabled={currentPage === 1}
@@ -188,28 +213,22 @@ const Tasks = () => {
                 «
               </button>
 
-              {/* Генерация кнопок страниц */}
-              {Array.from(
-                { length: Math.min(10, totalPages - (pageGroup - 1) * 10) },
-                (_, i) => {
-                  const pageNumber = (pageGroup - 1) * 10 + i + 1;
-                  return (
-                    <button
-                      key={pageNumber}
-                      className={`px-3 py-1 rounded text-sm ${
-                        currentPage === pageNumber
-                          ? "bg-blue-600 text-white"
-                          : "bg-gray-200 hover:bg-gray-300"
-                      }`}
-                      onClick={() => setCurrentPage(pageNumber)}
-                    >
-                      {pageNumber}
-                    </button>
-                  );
-                }
-              )}
+              {/* Генерация кнопок страниц внутри текущей группы */}
+              {pages.map((pageNumber) => (
+                <button
+                  key={pageNumber}
+                  className={`px-3 py-1 rounded text-sm ${
+                    currentPage === pageNumber
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-200 hover:bg-gray-300"
+                  }`}
+                  onClick={() => setCurrentPage(pageNumber)}
+                >
+                  {pageNumber}
+                </button>
+              ))}
 
-              {/* Кнопка вперед */}
+              {/* Кнопка вперёд на 1 страницу */}
               <button
                 className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
                 disabled={currentPage === totalPages}
@@ -224,10 +243,7 @@ const Tasks = () => {
               <button
                 className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
                 disabled={pageGroup * 10 >= totalPages}
-                onClick={() => {
-                  setPageGroup((prev) => prev + 1);
-                  setCurrentPage(pageGroup * 10 + 1);
-                }}
+                onClick={goToNextGroup}
               >
                 »»
               </button>

@@ -15,14 +15,17 @@ const ProjectDetail = () => {
 
   const [loading, setLoading] = useState(!location.state?.tasks);
   const [statusFilter, setStatusFilter] = useState("all");
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const tasksPerPage = 10;
 
+  // Загружаем проект, если нет задач в location.state
   useEffect(() => {
     if (!location.state?.tasks) {
       fetch(`${BASE_URL}/projects/${projectId}`)
         .then((response) => response.json())
         .then((data) => {
           console.log("✅ Получены данные о проекте:", data);
-
           setProject({
             name: data.project_name,
             tasks: data.tasks || [],
@@ -39,54 +42,147 @@ const ProjectDetail = () => {
     }
   }, [projectId, location.state]);
 
+  // Уникальные статусы (для фильтра)
   const uniqueStatuses = [
     "all",
     ...new Set(project.tasks.map((task) => task.status)),
   ];
 
+  // Фильтрация задач по статусу
   const filteredTasks =
     statusFilter === "all"
       ? project.tasks
       : project.tasks.filter((task) => task.status === statusFilter);
 
+  // Сброс текущей страницы при изменении фильтра
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter]);
+
+  // Пагинация
+  const totalPages = Math.ceil(filteredTasks.length / tasksPerPage);
+  const indexOfLastTask = currentPage * tasksPerPage;
+  const indexOfFirstTask = indexOfLastTask - tasksPerPage;
+  const currentTasks = filteredTasks.slice(indexOfFirstTask, indexOfLastTask);
+
+  /**
+   * Функция формирования набора страниц.
+   * Показывает первые 1-2 страницы, «…», несколько вокруг текущей, «…» и последнюю.
+   */
+  function getPageNumbers(currentPage, totalPages) {
+    // Если страниц совсем мало, показываем все
+    if (totalPages <= 5) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+
+    const pages = [];
+    const delta = 1; // сколько страниц показывать слева и справа от текущей
+
+    pages.push(1); // первая страница
+
+    // Если текущая страница - 4 или больше, то показываем «…»
+    if (currentPage - delta > 2) {
+      pages.push("...");
+    }
+
+    // Формируем диапазон [currentPage - delta, currentPage + delta]
+    const start = Math.max(2, currentPage - delta);
+    const end = Math.min(totalPages - 1, currentPage + delta);
+
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+
+    // Если текущая страница + delta < (последняя страница - 1), добавляем «…»
+    if (currentPage + delta < totalPages - 1) {
+      pages.push("...");
+    }
+
+    // Последняя страница
+    pages.push(totalPages);
+
+    return pages;
+  }
+
+  // Массив страниц (с «…»)
+  const pageNumbers = getPageNumbers(currentPage, totalPages);
+
+  // Обработчики «следующая» и «предыдущая» страница
+  const goToPrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
   return (
-    <div className="flex h-screen bg-gray-50 overflow-y-auto">
+    <div className="flex  bg-gray-50">
       <Sidebar />
       <div className="flex-1 flex flex-col p-3">
-        <div className="bg-white p-6 border rounded-xl shadow-md flex-1 overflow-auto">
+        <div className="bg-white p-6 border rounded-xl shadow-md flex-1">
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold text-gray-800">{project.name}</h2>
             <div className="flex items-center gap-3">
-              <select
-                className="bg-white border border-gray-300 rounded-xl px-4 py-2 text-gray-700 focus:outline-none transition-all duration-200 cursor-pointer appearance-none pr-8 font-medium"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                style={{
-                  backgroundImage:
-                    "url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23007CB2%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E')",
-                  backgroundRepeat: "no-repeat",
-                  backgroundPosition: "right 0.75rem center",
-                  backgroundSize: "0.75rem auto",
-                }}
-              >
-                {uniqueStatuses.map((status, index) => (
-                  <option 
-                  key={index} 
-                  value={status} 
-                  className="py-2 px-3  text-gray-700 hover:bg-blue-50"
+              {/* Кастомный дропдаун со статусами */}
+              <div className="relative inline-block w-64">
+                <div
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="bg-white border border-gray-300 rounded-xl px-4 py-2 text-gray-700 cursor-pointer flex justify-between items-center transition-all duration-200"
                 >
-                  {status === "all" 
-                    ? "Barchasi" 
-                    : `${status} (${
-                        project.tasks.filter((task) => task.status === status).length
-                      })`
-                  }
-                </option>
-                ))}
-              </select>
+                  <span>
+                    {statusFilter === "all"
+                      ? "Barchasi"
+                      : `${statusFilter} (${
+                          project.tasks.filter(
+                            (task) => task.status === statusFilter
+                          ).length
+                        })`}
+                  </span>
+                  <svg
+                    className="w-4 h-4 text-gray-700"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+                {dropdownOpen && (
+                  <div className="absolute mt-1 w-full bg-white border border-gray-300 rounded-xl shadow-lg z-10">
+                    {uniqueStatuses.map((status, index) => (
+                      <div
+                        key={index}
+                        onClick={() => {
+                          setStatusFilter(status);
+                          setDropdownOpen(false);
+                        }}
+                        className="px-4 py-2 text-gray-700 hover:bg-blue-50 cursor-pointer"
+                      >
+                        {status === "all"
+                          ? "Barchasi"
+                          : `${status} (${
+                              project.tasks.filter(
+                                (task) => task.status === status
+                              ).length
+                            })`}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
               <LogoutButton />
             </div>
           </div>
+
           <div className="border-t border-dashed border-gray-300 my-4"></div>
 
           {loading ? (
@@ -105,33 +201,120 @@ const ProjectDetail = () => {
                 Vazifalar ro‘yxati
               </h3>
               {filteredTasks.length > 0 ? (
-                <div className="space-y-3">
-                  {filteredTasks.map((task, index) => (
-                    <div
-                      key={index}
-                      className="p-4 bg-white border rounded-lg shadow-sm flex items-start justify-between hover:bg-gray-100 transition"
-                    >
-                      <div>
-                        <h4 className="text-gray-800 font-medium">
-                          {task.task_name}
-                        </h4>
-                        <p className="text-gray-500 text-sm mt-1">
-                          <span className="font-semibold">Ijrochi:</span>{" "}
-                          {task.assignee?.displayName || "Belgilanmagan"}
-                        </p>
-                        <p className="text-gray-500 text-sm mt-1">
-                          <span className="font-semibold">Muddat:</span>{" "}
-                          {task.due_date || "Muddat belgilanmagan"}
-                        </p>
-                        <p className="text-gray-500 text-sm mt-1 flex items-center">
-                          <span className="px-2 py-1 rounded-md text-xs font-semibold bg-blue-200 text-blue-700">
-                            {task.status}
-                          </span>
-                        </p>
+                <>
+                  <div className="space-y-3">
+                    {currentTasks.map((task, index) => (
+                      <div
+                        key={index}
+                        className="p-4 bg-white border rounded-lg shadow-sm flex items-start justify-between hover:bg-gray-100 transition"
+                      >
+                        <div>
+                          <h4 className="text-gray-800 font-medium">
+                            {task.task_name}
+                          </h4>
+                          <p className="text-gray-500 text-sm mt-1">
+                            <span className="font-semibold">Ijrochi:</span>{" "}
+                            {task.assignee?.displayName || "Belgilanmagan"}
+                          </p>
+                          <p className="text-gray-500 text-sm mt-1">
+                            <span className="font-semibold">Muddat:</span>{" "}
+                            {task.due_date || "Muddat belgilanmagan"}
+                          </p>
+                          <p className="text-gray-500 text-sm mt-1 flex items-center">
+                            <span className="px-2 py-1 rounded-md text-xs font-semibold bg-blue-200 text-blue-700">
+                              {task.status}
+                            </span>
+                          </p>
+                        </div>
                       </div>
+                    ))}
+                  </div>
+
+                  {/* Пагинация в стиле, похожем на скриншот */}
+                  {totalPages > 1 && (
+                    <div className="flex justify-center items-center mt-6 space-x-2">
+                      {/* Кнопка «Назад» */}
+                      <button
+                        onClick={goToPrevPage}
+                        disabled={currentPage === 1}
+                        className={`w-10 h-10 flex items-center justify-center rounded-full 
+                          ${
+                            currentPage === 1
+                              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                          }`}
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M15 19l-7-7 7-7"
+                          />
+                        </svg>
+                      </button>
+
+                      {/* Набор страниц с «...». См. getPageNumbers */}
+                      {pageNumbers.map((item, idx) => {
+                        if (item === "...") {
+                          return (
+                            <div
+                              key={idx}
+                              className="w-10 h-10 flex items-center justify-center text-gray-500"
+                            >
+                              ...
+                            </div>
+                          );
+                        }
+                        return (
+                          <button
+                            key={idx}
+                            onClick={() => setCurrentPage(item)}
+                            className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors 
+                              ${
+                                currentPage === item
+                                  ? "bg-blue-500 text-white"
+                                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                              }`}
+                          >
+                            {item}
+                          </button>
+                        );
+                      })}
+
+                      {/* Кнопка «Вперёд» */}
+                      <button
+                        onClick={goToNextPage}
+                        disabled={currentPage === totalPages}
+                        className={`w-10 h-10 flex items-center justify-center rounded-full 
+                          ${
+                            currentPage === totalPages
+                              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                          }`}
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5l7 7-7 7"
+                          />
+                        </svg>
+                      </button>
                     </div>
-                  ))}
-                </div>
+                  )}
+                </>
               ) : (
                 <p className="text-gray-500 text-center">
                   Hozircha bu loyihada vazifalar mavjud emas.
