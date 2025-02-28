@@ -17,7 +17,7 @@ const ProjectDetail = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const tasksPerPage = 10;
+  const tasksPerPage = 7;
 
   // Загружаем проект, если нет задач в location.state
   useEffect(() => {
