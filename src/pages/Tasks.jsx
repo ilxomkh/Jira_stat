@@ -8,55 +8,50 @@ const Tasks = () => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 20;
   const [totalPages, setTotalPages] = useState(1);
   const [pageGroup, setPageGroup] = useState(1); // Группа страниц (по 10)
 
   const [searchParams] = useSearchParams();
   const selectedStatus = searchParams.get("status"); // Получаем статус из URL
 
-  useEffect(() => {
-    console.log("🔍 Отправляем `GET`-запрос к /projects/tasks");
+  fetch(`${BASE_URL}/projects/tasks`)
+  .then((response) => response.json())
+  .then((data) => {
+    console.log("✅ Загруженные данные с сервера:", data); // Выводим все данные
 
-    fetch(`${BASE_URL}/projects/tasks`)
-      .then((response) => response.json())
-      .then((data) => {
-        console.log("✅ Загруженные задачи:", data);
+    if (!Array.isArray(data)) {
+      console.error("❌ Ошибка: `tasks` не является массивом", data);
+      setTasks([]);
+      return;
+    }
 
-        if (!Array.isArray(data)) {
-          console.error("❌ Ошибка: `tasks` не является массивом", data);
-          setTasks([]);
-          return;
-        }
+    let formattedTasks = data.map((task) => ({
+      id: task.id || Math.random(),
+      name: task.task_name || "Nomsiz vazifa",
+      project: task.project || "Noma'lum loyiha",
+      dueDate: task.due_date || "Sana yo'q",
+      assignee: task.assignee || "Belgilanmagan",
+      status: task.status || "Noma'lum holat",
+      assignee_avatar: task.assignee_avatar || "https://cdn-icons-png.flaticon.com/512/149/149071.png",
+    }));
 
-        let formattedTasks = data.map((task) => ({
-            id: task.id || Math.random(),
-            name: task.task_name || "Nomsiz vazifa",
-            project: task.project || "Noma'lum loyiha",
-            dueDate: task.due_date || "Sana yo'q",
-            assignee: task.assignee || "Belgilanmagan",
-            status: task.status || "Noma'lum holat",
-            assignee_avatar: task.assignee_avatar || "https://cdn-icons-png.flaticon.com/512/149/149071.png",
-          }));
-          
+    formattedTasks.sort(
+      (a, b) => new Date(b.dueDate) - new Date(a.dueDate)
+    );
 
-        formattedTasks.sort(
-          (a, b) => new Date(b.dueDate) - new Date(a.dueDate)
-        );
+    if (selectedStatus) {
+      formattedTasks = formattedTasks.filter(
+        (task) => task.status === selectedStatus
+      );
+    }
 
-        // Фильтруем задачи по статусу, если он передан в URL
-        if (selectedStatus) {
-          formattedTasks = formattedTasks.filter(
-            (task) => task.status === selectedStatus
-          );
-        }
+    setTasks(formattedTasks);
+    setTotalPages(Math.ceil(formattedTasks.length / itemsPerPage));
+  })
+  .catch((error) => console.error("❌ Ошибка загрузки задач:", error))
+  .finally(() => setLoading(false));
 
-        setTasks(formattedTasks);
-        setTotalPages(Math.ceil(formattedTasks.length / itemsPerPage));
-      })
-      .catch((error) => console.error("❌ Ошибка загрузки задач:", error))
-      .finally(() => setLoading(false));
-  }, [selectedStatus]);
 
   // Фильтрация задач для текущей страницы
   const currentTasks = tasks.slice(

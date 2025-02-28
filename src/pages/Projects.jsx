@@ -25,20 +25,20 @@ const Projects = () => {
     fetch(`${BASE_URL}/projects`)
       .then((response) => response.json())
       .then((data) => {
-        console.log("✅ Полученные проекты:", data);
-
+        console.log("✅ Полученные проекты (весь JSON с сервера):", data); // Вывод всех данных
+  
         const statusMap = {};
-
+  
         data.forEach((project) => {
           project.tasks?.forEach((task) => {
             const status = task.status || "Boshqa";
             statusMap[status] = (statusMap[status] || 0) + 1;
           });
         });
-
+  
         console.log("📊 Подсчитанные статусы задач:", statusMap);
         setTaskStatusCounts(statusMap);
-
+  
         const formattedProjects = data.map((project) => ({
           id: project.project_key,
           name: project.project_name,
@@ -50,12 +50,15 @@ const Projects = () => {
           bgColor: getRandomColor(),
           taskDetails: project.tasks || [],
         }));
-
+  
+        console.log("📌 Отформатированные проекты:", formattedProjects);
+  
         setProjects(formattedProjects);
       })
       .catch((error) => console.error("❌ Ошибка загрузки проектов:", error))
       .finally(() => setLoading(false));
   }, []);
+  
 
   const getRandomColor = () => {
     const colors = [
